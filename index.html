@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeltaAI Charging Estimator</title>
+  <style>
+    :root {
+      --primary: #13294B;
+      --primary-light: #1a3a6b;
+      --accent: #E84A27;
+      --accent-hover: #d13d1c;
+      --surface: #ffffff;
+      --surface-alt: #f4f6f9;
+      --border: #d1d9e6;
+      --text: #1a1a2e;
+      --text-muted: #5a6577;
+      --success: #16a34a;
+      --warning: #d97706;
+      --info: #2563eb;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--surface-alt);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 0;
+    }
+
+    .header-top {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 1rem;
+    }
+
+    .header-top h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header-top h1 span {
+      color: var(--accent);
+    }
+
+    .header-top p {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .header-info {
+      background: var(--primary-light);
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .header-info-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0.75rem 2rem;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .header-info-inner strong {
+      color: rgba(255,255,255,0.9);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-header svg {
+      width: 18px;
+      height: 18px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+
+    .form-group label .hint {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #8896a8;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+    }
+
+    .input-wrap input,
+    .input-wrap select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--surface);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      appearance: none;
+    }
+
+    .input-wrap select {
+      padding-right: 2rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6577' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.6rem center;
+      cursor: pointer;
+    }
+
+    .input-wrap input:focus,
+    .input-wrap select:focus {
+      outline: none;
+      border-color: var(--info);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .input-wrap .unit {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .input-wrap input.has-unit {
+      padding-right: 3rem;
+    }
+
+    .input-wrap input:invalid {
+      border-color: var(--accent);
+    }
+
+    .btn-calculate {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.75rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-calculate:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-calculate:active {
+      transform: translateY(1px);
+    }
+
+    /* Result panel */
+    .result-panel {
+      position: sticky;
+      top: 2rem;
+    }
+
+    .result-summary {
+      text-align: center;
+      padding: 1.5rem 1.5rem 1rem;
+    }
+
+    .result-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .result-value {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.1;
+      margin: 0.25rem 0;
+    }
+
+    .result-unit {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .result-breakdown {
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .result-breakdown h3 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .breakdown-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .breakdown-row .label {
+      color: var(--text-muted);
+    }
+
+    .breakdown-row .value {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .breakdown-row.dominant .value {
+      color: var(--accent);
+    }
+
+    .breakdown-divider {
+      border: none;
+      border-top: 1px dashed var(--border);
+      margin: 0.4rem 0;
+    }
+
+    .formula-section {
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .formula-section h3 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .formula-box {
+      background: var(--surface-alt);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+
+    .formula-box .highlight {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .sbatch-section {
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .sbatch-section h3 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .sbatch-box {
+      background: var(--primary);
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      position: relative;
+      overflow-x: auto;
+    }
+
+    .sbatch-box .comment {
+      color: #64748b;
+    }
+
+    .sbatch-box .flag {
+      color: #7dd3fc;
+    }
+
+    .sbatch-box .val {
+      color: #fbbf24;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: rgba(255,255,255,0.6);
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    .node-info {
+      margin-top: 1.5rem;
+    }
+
+    .node-info .card-body {
+      padding: 1rem 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      text-align: center;
+    }
+
+    .spec-item .spec-val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .spec-item .spec-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--info);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Validation tooltip */
+    .validation-msg {
+      font-size: 0.78rem;
+      color: var(--accent);
+      margin-top: 0.2rem;
+      min-height: 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .result-panel {
+        position: static;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header-info-inner {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .specs-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .container {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <h1><span>DeltaAI</span> Charging Estimator</h1>
+      <p>Estimate Service Unit charges for your DeltaAI jobs before submitting</p>
+    </div>
+    <div class="header-info">
+      <div class="header-info-inner">
+        <span><strong>1 SU</strong> = 1 GH200 &times; 1 hour</span>
+        <span><strong>Node</strong> = 4 GH200 superchips (4 H100 GPUs, 288 cores, 480 GB)</span>
+        <span><strong>Billing</strong> = max(GPU, CPU, Memory) weighted</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="layout">
+      <!-- Input Card -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
+            Job Parameters
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nodes</label>
+                <div class="input-wrap">
+                  <input type="number" id="nodes" value="1" min="1" max="152" step="1">
+                </div>
+                <div class="validation-msg" id="nodes-msg"></div>
+              </div>
+              <div class="form-group">
+                <label>GPUs per node</label>
+                <div class="input-wrap">
+                  <input type="number" id="gpus" value="1" min="0" max="4" step="1">
+                </div>
+                <div class="validation-msg" id="gpus-msg"></div>
+              </div>
+              <div class="form-group">
+                <label>Tasks per node</label>
+                <div class="input-wrap">
+                  <input type="number" id="ntasks" value="1" min="1" max="288" step="1">
+                </div>
+                <div class="validation-msg" id="ntasks-msg"></div>
+              </div>
+              <div class="form-group">
+                <label>CPUs per task</label>
+                <div class="input-wrap">
+                  <input type="number" id="cpus" value="1" min="1" max="288" step="1">
+                </div>
+                <div class="validation-msg" id="cpus-msg"></div>
+              </div>
+              <div class="form-group">
+                <label>Memory per node <span class="hint">(GB)</span></label>
+                <div class="input-wrap">
+                  <input type="number" id="mem" value="120" min="1" max="480" step="1" class="has-unit">
+                  <span class="unit">GB</span>
+                </div>
+                <div class="validation-msg" id="mem-msg"></div>
+              </div>
+              <div class="form-group">
+                <label>Wall time</label>
+                <div class="input-wrap">
+                  <input type="number" id="time" value="1" min="0.01" step="0.01" class="has-unit">
+                  <span class="unit" id="time-unit-label">hr</span>
+                </div>
+                <div class="validation-msg" id="time-msg"></div>
+              </div>
+              <div class="form-group">
+                <label>Time unit</label>
+                <div class="input-wrap">
+                  <select id="time-unit">
+                    <option value="hours" selected>Hours</option>
+                    <option value="minutes">Minutes</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Partition</label>
+                <div class="input-wrap">
+                  <select id="partition">
+                    <option value="ghx4" selected>ghx4 (default, 1.0x)</option>
+                    <option value="ghx4-interactive">ghx4-interactive (2.0x)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <button class="btn-calculate" onclick="calculate()">Estimate Charges</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card node-info" style="margin-top:1.25rem">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
+            DeltaAI Node Specifications
+          </div>
+          <div class="card-body">
+            <div class="specs-grid">
+              <div class="spec-item">
+                <div class="spec-val">4</div>
+                <div class="spec-label">H100 GPUs</div>
+              </div>
+              <div class="spec-item">
+                <div class="spec-val">288</div>
+                <div class="spec-label">CPU Cores</div>
+              </div>
+              <div class="spec-item">
+                <div class="spec-val">480</div>
+                <div class="spec-label">GB Memory</div>
+              </div>
+              <div class="spec-item">
+                <div class="spec-val">152</div>
+                <div class="spec-label">Total Nodes</div>
+              </div>
+            </div>
+            <p style="margin-top:0.75rem; font-size:0.82rem">
+              Each node contains 4 NVIDIA GH200 Grace Hopper superchips. Each GH200 pairs one H100 GPU (96 GB HBM3) with a 72-core Grace ARM CPU and 120 GB LPDDR5 memory.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div class="result-panel">
+        <div class="card">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            Estimated Charge
+          </div>
+          <div class="result-summary">
+            <div class="result-label">Total Service Units</div>
+            <div class="result-value" id="result-su">--</div>
+            <div class="result-unit">SU (Service Units)</div>
+          </div>
+          <div class="result-breakdown">
+            <h3>Billing Breakdown</h3>
+            <div class="breakdown-rows">
+              <div class="breakdown-row" id="row-gpu">
+                <span class="label">GPU-based GH200s</span>
+                <span class="value" id="val-gpu">--</span>
+              </div>
+              <div class="breakdown-row" id="row-cpu">
+                <span class="label">CPU-based GH200s</span>
+                <span class="value" id="val-cpu">--</span>
+              </div>
+              <div class="breakdown-row" id="row-mem">
+                <span class="label">Memory-based GH200s</span>
+                <span class="value" id="val-mem">--</span>
+              </div>
+              <hr class="breakdown-divider">
+              <div class="breakdown-row">
+                <span class="label">Billed GH200s (max)</span>
+                <span class="value" id="val-billed">--</span>
+              </div>
+              <div class="breakdown-row">
+                <span class="label">Wall time</span>
+                <span class="value" id="val-time">--</span>
+              </div>
+              <div class="breakdown-row">
+                <span class="label">Partition factor</span>
+                <span class="value" id="val-factor">--</span>
+              </div>
+            </div>
+          </div>
+          <div class="formula-section">
+            <h3>Formula</h3>
+            <div class="formula-box" id="formula-box">
+              GH200s = <span class="highlight">max</span>(GPUs, &lceil;CPUs &frasl; 72&rceil;, &lceil;Mem<sub>GB</sub> &frasl; 120&rceil;) &times; nodes<br>
+              Charge = GH200s &times; hours &times; partition_factor
+            </div>
+          </div>
+          <div class="sbatch-section">
+            <h3>SBATCH Directives</h3>
+            <div class="sbatch-box" id="sbatch-box">
+              <button class="copy-btn" onclick="copySbatch()" id="copy-btn">Copy</button>
+              <span class="comment">#!/bin/bash</span><br>
+              <span class="flag">#SBATCH</span> <span class="val">--nodes=1</span><br>
+              <span class="flag">#SBATCH</span> <span class="val">--gpus-per-node=1</span><br>
+              <span class="flag">#SBATCH</span> <span class="val">--ntasks-per-node=1</span><br>
+              <span class="flag">#SBATCH</span> <span class="val">--cpus-per-task=1</span><br>
+              <span class="flag">#SBATCH</span> <span class="val">--mem=120G</span><br>
+              <span class="flag">#SBATCH</span> <span class="val">--time=01:00:00</span><br>
+              <span class="flag">#SBATCH</span> <span class="val">--partition=ghx4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Based on the DeltaAI <a href="https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/job-accounting.html" target="_blank" rel="noopener">Job Accounting</a> documentation.
+    This is an estimate only; actual charges may vary.
+    <br>
+    NCSA &mdash; University of Illinois Urbana-Champaign
+  </footer>
+
+  <script>
+    // Per GH200 specs
+    const CORES_PER_GH200 = 72;
+    const MEM_PER_GH200_GB = 120;
+    const GPUS_PER_NODE = 4;
+    const CORES_PER_NODE = 288;
+    const MEM_PER_NODE_GB = 480;
+    const MAX_NODES = 152;
+
+    const PARTITION_FACTORS = {
+      'ghx4': 1.0,
+      'ghx4-interactive': 2.0
+    };
+
+    const PARTITION_MAX_HOURS = {
+      'ghx4': 48,
+      'ghx4-interactive': 2
+    };
+
+    // Update time unit label
+    document.getElementById('time-unit').addEventListener('change', function () {
+      document.getElementById('time-unit-label').textContent = this.value === 'hours' ? 'hr' : 'min';
+    });
+
+    // Auto-calculate on any input change
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', calculate);
+      el.addEventListener('change', calculate);
+    });
+
+    function validate() {
+      let valid = true;
+
+      const nodes = parseInt(document.getElementById('nodes').value) || 0;
+      const gpus = parseInt(document.getElementById('gpus').value) || 0;
+      const ntasks = parseInt(document.getElementById('ntasks').value) || 0;
+      const cpus = parseInt(document.getElementById('cpus').value) || 0;
+      const mem = parseFloat(document.getElementById('mem').value) || 0;
+      const time = parseFloat(document.getElementById('time').value) || 0;
+      const timeUnit = document.getElementById('time-unit').value;
+      const partition = document.getElementById('partition').value;
+
+      const hours = timeUnit === 'minutes' ? time / 60 : time;
+      const cpusPerNode = ntasks * cpus;
+      const maxHours = PARTITION_MAX_HOURS[partition];
+
+      // Clear all messages
+      ['nodes', 'gpus', 'ntasks', 'cpus', 'mem', 'time'].forEach(id => {
+        document.getElementById(id + '-msg').textContent = '';
+      });
+
+      if (nodes < 1 || nodes > MAX_NODES) {
+        document.getElementById('nodes-msg').textContent = `Must be 1–${MAX_NODES}`;
+        valid = false;
+      }
+      if (gpus < 0 || gpus > GPUS_PER_NODE) {
+        document.getElementById('gpus-msg').textContent = `Must be 0–${GPUS_PER_NODE}`;
+        valid = false;
+      }
+      if (cpusPerNode > CORES_PER_NODE) {
+        document.getElementById('cpus-msg').textContent = `Total CPUs/node (${cpusPerNode}) exceeds ${CORES_PER_NODE}`;
+        valid = false;
+      }
+      if (mem > MEM_PER_NODE_GB) {
+        document.getElementById('mem-msg').textContent = `Max ${MEM_PER_NODE_GB} GB per node`;
+        valid = false;
+      }
+      if (mem < 1) {
+        document.getElementById('mem-msg').textContent = 'Must be at least 1 GB';
+        valid = false;
+      }
+      if (time <= 0) {
+        document.getElementById('time-msg').textContent = 'Must be greater than 0';
+        valid = false;
+      }
+      if (hours > maxHours) {
+        const label = timeUnit === 'minutes' ? `${maxHours * 60} min` : `${maxHours} hr`;
+        document.getElementById('time-msg').textContent = `${partition} max is ${label}`;
+        valid = false;
+      }
+
+      return valid;
+    }
+
+    function calculate() {
+      if (!validate()) {
+        document.getElementById('result-su').textContent = '--';
+        ['val-gpu', 'val-cpu', 'val-mem', 'val-billed', 'val-time', 'val-factor'].forEach(id => {
+          document.getElementById(id).textContent = '--';
+        });
+        document.querySelectorAll('.breakdown-row').forEach(r => r.classList.remove('dominant'));
+        return;
+      }
+
+      const nodes = parseInt(document.getElementById('nodes').value);
+      const gpusPerNode = parseInt(document.getElementById('gpus').value);
+      const ntasks = parseInt(document.getElementById('ntasks').value);
+      const cpusPerTask = parseInt(document.getElementById('cpus').value);
+      const memPerNode = parseFloat(document.getElementById('mem').value);
+      const time = parseFloat(document.getElementById('time').value);
+      const timeUnit = document.getElementById('time-unit').value;
+      const partition = document.getElementById('partition').value;
+
+      const hours = timeUnit === 'minutes' ? time / 60 : time;
+      const factor = PARTITION_FACTORS[partition];
+      const cpusPerNode = ntasks * cpusPerTask;
+
+      // GH200-equivalents per node for each resource dimension
+      const gh200_gpu = gpusPerNode;
+      const gh200_cpu = Math.ceil(cpusPerNode / CORES_PER_GH200);
+      const gh200_mem = Math.ceil(memPerNode / MEM_PER_GH200_GB);
+
+      // Billed GH200s per node = max of the three
+      const gh200_per_node = Math.max(gh200_gpu, gh200_cpu, gh200_mem);
+      const total_gh200 = gh200_per_node * nodes;
+
+      // Charge
+      const charge = total_gh200 * hours * factor;
+
+      // Update UI
+      document.getElementById('result-su').textContent = charge < 0.01 && charge > 0
+        ? charge.toExponential(2)
+        : charge.toFixed(2);
+
+      const totalGpuGH200 = gh200_gpu * nodes;
+      const totalCpuGH200 = gh200_cpu * nodes;
+      const totalMemGH200 = gh200_mem * nodes;
+
+      document.getElementById('val-gpu').textContent = `${totalGpuGH200} (${gpusPerNode} GPU/node)`;
+      document.getElementById('val-cpu').textContent = `${totalCpuGH200} (${cpusPerNode} CPU/node ÷ 72)`;
+      document.getElementById('val-mem').textContent = `${totalMemGH200} (${memPerNode} GB/node ÷ 120)`;
+      document.getElementById('val-billed').textContent = total_gh200;
+      document.getElementById('val-time').textContent = hours.toFixed(2) + ' hr';
+      document.getElementById('val-factor').textContent = factor + 'x (' + partition + ')';
+
+      // Highlight dominant dimension
+      document.querySelectorAll('.breakdown-row').forEach(r => r.classList.remove('dominant'));
+      const max = Math.max(gh200_gpu, gh200_cpu, gh200_mem);
+      if (gh200_gpu === max) document.getElementById('row-gpu').classList.add('dominant');
+      if (gh200_cpu === max) document.getElementById('row-cpu').classList.add('dominant');
+      if (gh200_mem === max) document.getElementById('row-mem').classList.add('dominant');
+
+      // Update sbatch box
+      const hh = Math.floor(hours);
+      const mm = Math.floor((hours - hh) * 60);
+      const ss = Math.round(((hours - hh) * 60 - mm) * 60);
+      const timeStr = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+
+      let sbatch = `<button class="copy-btn" onclick="copySbatch()" id="copy-btn">Copy</button>`;
+      sbatch += `<span class="comment">#!/bin/bash</span><br>`;
+      sbatch += `<span class="flag">#SBATCH</span> <span class="val">--nodes=${nodes}</span><br>`;
+      if (gpusPerNode > 0) {
+        sbatch += `<span class="flag">#SBATCH</span> <span class="val">--gpus-per-node=${gpusPerNode}</span><br>`;
+      }
+      sbatch += `<span class="flag">#SBATCH</span> <span class="val">--ntasks-per-node=${ntasks}</span><br>`;
+      sbatch += `<span class="flag">#SBATCH</span> <span class="val">--cpus-per-task=${cpusPerTask}</span><br>`;
+      sbatch += `<span class="flag">#SBATCH</span> <span class="val">--mem=${memPerNode}G</span><br>`;
+      sbatch += `<span class="flag">#SBATCH</span> <span class="val">--time=${timeStr}</span><br>`;
+      sbatch += `<span class="flag">#SBATCH</span> <span class="val">--partition=${partition}</span>`;
+      document.getElementById('sbatch-box').innerHTML = sbatch;
+    }
+
+    function copySbatch() {
+      const box = document.getElementById('sbatch-box');
+      const text = box.innerText.replace('Copy', '').trim();
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
+    }
+
+    // Calculate on page load
+    calculate();
+  </script>
+</body>
+</html>
