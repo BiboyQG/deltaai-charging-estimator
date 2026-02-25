@@ -10,11 +10,11 @@ DeltaAI bills jobs in **Service Units (SU)**, where **1 SU = 1 GH200 superchip u
 
 Each DeltaAI node contains 4 NVIDIA GH200 Grace Hopper superchips. Each GH200 provides:
 
-| Resource | Per GH200 |
-|----------|-----------|
-| GPU | 1 x H100 (96 GB HBM3) |
-| CPU | 72 Grace ARM cores |
-| Memory | 120 GB LPDDR5 |
+| Resource | Per GH200             |
+| -------- | --------------------- |
+| GPU      | 1 x H100 (96 GB HBM3) |
+| CPU      | 72 Grace ARM cores    |
+| Memory   | 120 GB LPDDR5         |
 
 The number of GH200s billed is determined by whichever resource dimension requires the most GH200 equivalents:
 
@@ -26,10 +26,10 @@ Charge (SU) = GH200s_per_node x nodes x wall_hours x partition_factor
 
 ### Partition charge factors
 
-| Partition | Factor | Max Wall Time |
-|-----------|--------|---------------|
-| `ghx4` (default) | 1.0x | 48 hours |
-| `ghx4-interactive` | 2.0x | 2 hours |
+| Partition          | Factor | Max Wall Time |
+| ------------------ | ------ | ------------- |
+| `ghx4` (default)   | 1.0x   | 48 hours      |
+| `ghx4-interactive` | 2.0x   | 2 hours       |
 
 ## Usage
 
