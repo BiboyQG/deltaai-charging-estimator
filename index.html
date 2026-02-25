@@ -473,6 +473,98 @@
         padding: 1rem;
       }
     }
+
+    /* Formula equivalence note */
+    .formula-equiv {
+      display: block;
+      margin-top: 0.4rem;
+      padding-top: 0.4rem;
+      border-top: 1px dashed var(--border);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      margin-top: 1.5rem;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+
+    .faq-question {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      transition: background 0.15s;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+
+    .faq-question:hover {
+      background: var(--surface-alt);
+    }
+
+    .faq-chevron {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--text-muted);
+      transition: transform 0.3s ease;
+    }
+
+    .faq-item.active .faq-chevron {
+      transform: rotate(180deg);
+    }
+
+    .faq-answer-wrapper {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.35s ease;
+    }
+
+    .faq-item.active .faq-answer-wrapper {
+      grid-template-rows: 1fr;
+    }
+
+    .faq-answer {
+      overflow: hidden;
+    }
+
+    .faq-answer-content {
+      padding: 0 1.5rem 1.15rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.75;
+    }
+
+    .faq-answer-content p {
+      margin: 0;
+    }
+
+    .faq-answer-content code {
+      background: var(--surface-alt);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
   </style>
 </head>
 <body>
@@ -647,7 +739,8 @@
             <h3>Formula</h3>
             <div class="formula-box" id="formula-box">
               GH200s = <span class="highlight">max</span>(GPUs, &lceil;CPUs &frasl; 72&rceil;, &lceil;Mem<sub>GB</sub> &frasl; 120&rceil;) &times; nodes<br>
-              Charge = GH200s &times; hours &times; partition_factor
+              Charge (SU) = GH200s &times; <span class="highlight">wall_time</span><sub>hr</sub> &times; partition_factor
+              <span class="formula-equiv">&equiv; billing &times; elapsed<sub>sec</sub> &frasl; 3,600,000<br>where billing = GH200s &times; 1000 &times; partition_factor</span>
             </div>
           </div>
           <div class="sbatch-section">
@@ -664,6 +757,75 @@
               <span class="flag">#SBATCH</span> <span class="val">--partition=ghx4</span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="faq-section">
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Frequently Asked Questions
+        </div>
+        <div class="card-body" style="padding:0">
+
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              <span>Are SUs charged based on my reserved time or the actual wall-time?</span>
+              <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="faq-answer-wrapper">
+              <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>Charges are based on <strong>actual wall-time</strong> (elapsed time), not the time limit you set with <code>--time</code>. The <code>--time</code> flag only sets the maximum duration your job is allowed to run. If you request 4 hours but your job completes in 1 hour, you are only charged for 1 hour of usage, meaning setting a shorter <code>--time</code> does not save SUs&mdash;it only risks your job being killed before completion. Internally, the charging formula uses <code>ElapsedRaw</code> (actual seconds elapsed), not <code>Timelimit</code>.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              <span>Is there any rounding in the SU calculation (e.g., per-hour)?</span>
+              <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="faq-answer-wrapper">
+              <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>No. DeltaAI uses <strong>second-level granularity</strong> for charging. The system-level formula <code>billing &times; ElapsedRaw / 3,600,000</code> operates on raw elapsed seconds, so there is no rounding to the nearest hour or minute. If your job runs for 1 hour and 30 seconds, you are charged for exactly that duration.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              <span>What happens if my job hangs or becomes idle?</span>
+              <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="faq-answer-wrapper">
+              <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>You are still charged for the entire elapsed wall-time, even if your job is idle, hung, or not actively using the allocated resources. Every second the job is running counts toward your SU charge. For large-scale jobs (e.g., multi-node runs with <code>billing=16000</code> or higher), a hung job can consume SUs rapidly. Monitor your jobs and cancel with <code>scancel</code> any that are no longer making progress.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              <span>What is the difference between <code>ghx4</code> and <code>ghx4-interactive</code> charges?</span>
+              <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="faq-answer-wrapper">
+              <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>The <code>ghx4-interactive</code> partition applies a <strong>2.0&times;</strong> multiplier to the base charge, while the standard <code>ghx4</code> partition uses a 1.0&times; multiplier. This means interactive jobs cost twice as many SUs per unit of time. However, <code>ghx4-interactive</code> jobs are limited to a maximum of 2 hours, whereas <code>ghx4</code> jobs can run up to 48 hours.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -846,6 +1008,11 @@
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
       });
+    }
+
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      item.classList.toggle('active');
     }
 
     // Calculate on page load
